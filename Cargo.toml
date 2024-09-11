@@ -1,0 +1,21 @@
+[package]
+name = "annex_rst"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.9.0"
+actix-cors = "0.7.0"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
+mongodb = "3.1.0"
+bson = "2.11.0"
+futures = "0.3"
+jsonwebtoken = "9.3.0"
+dotenv = "0.15.0"
+num_cpus = "1.16.0"
+actix-web-httpauth = "0.8.2"
+
+
+[build-dependencies]
+cc = { version = "1.1.18", features = ["parallel"] }
