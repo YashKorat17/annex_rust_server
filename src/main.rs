@@ -1,14 +1,18 @@
 #[path ="routes/cust.rs"] pub mod cust;
+#[path ="routes/estimate.rs"] pub mod estimate;
+#[path ="routes/payment.rs"] pub mod payment;
 extern crate dotenv;
 
 use dotenv::dotenv;
+use estimate::{get_estimate, get_estimate_id};
+use payment::{get_payment, get_payment_id};
 use std::env;
 use actix_cors::Cors;
 use actix_web::{ http, web, App, HttpServer};
 use mongodb::{
     options::ClientOptions, Client
 };
-use cust::{check_username, get_all_customers, get_all_customers_estimate, get_customers, test};
+use cust::{check_username, get_all_customers, get_all_customers_estimate, get_customers};
 
 
 #[actix_web::main]
@@ -33,11 +37,20 @@ async fn main() -> std::io::Result<()> {
             .app_data(
                 web::Data::new(client.clone())
             )
-            .service(test)
             .service(get_customers)
             .service(check_username)
             .service(get_all_customers)
             .service(get_all_customers_estimate)
+            .service(
+                web::scope("/api/v1/estimate")
+                .service(get_estimate_id)
+                .service(get_estimate)
+        )
+        .service(
+            web::scope("/api/v1/payment")
+            .service(get_payment_id)
+            .service(get_payment)   
+        )
     })
     .bind(format!("{}:{}",env::var("RUST_HOST").unwrap(), env::var("RUST_PORT").unwrap()))?
     .workers(num_cpus::get())

@@ -48,16 +48,16 @@ pub async fn validate_token(token: &str, client: &Client) -> (bool, String) {
     }
 }
 
-pub async  fn validatorMiddleware(
-    req:ServiceRequest,
-    credentials: actix_web_httpauth::extractors::bearer::BearerAuth,
-) -> Result<ServiceRequest, actix_web::Error> {
-    let client: Client = req.app_data::<Client>().unwrap().clone();
-    let token: &str = credentials.token();
-    let b: (bool, String) = validate_token(token, &client).await;
-       if b.0 {
-        Ok(req)
-    } else {
-        Err(actix_web::error::ErrorUnauthorized("Unauthorized"))
-    }
-}
+// pub async  fn validatorMiddleware(
+//     req:ServiceRequest,
+//     credentials: actix_web_httpauth::extractors::bearer::BearerAuth,
+// ) -> Result<ServiceRequest, actix_web::Error> {
+//     let client: Client = req.app_data::<Client>().unwrap().clone();
+//     let token: &str = credentials.token();
+//     let b: (bool, String) = validate_token(token, &client).await;
+//        if b.0 {
+//         Ok(req)
+//     } else {
+//         Err(actix_web::error::ErrorUnauthorized("Unauthorized"))
+//     }
+// }
