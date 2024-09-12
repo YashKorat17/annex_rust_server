@@ -100,7 +100,7 @@ pub async fn check_username(
                 gstin: user.gstin,
                 msg: "User found".to_string(),
             }),
-            None => HttpResponse::BadRequest().json(doc! {
+            none => HttpResponse::BadRequest().json(doc! {
                 "status": false
             }),
         }
