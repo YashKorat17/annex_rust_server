@@ -17,7 +17,7 @@ pub async fn test() -> impl Responder {
     println!("Test");
     HttpResponse::Ok().json(doc! {
         "status": true,
-        "is_not": "working"
+        "msg": "Test"
     })
 }
 
