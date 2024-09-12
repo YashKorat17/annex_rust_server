@@ -11,7 +11,7 @@ pub struct Customer {
     pub op_fine: f32,
     pub ph: Option<Vec<i64>>,
     pub email: String,
-    pub gstin: String,
+    pub gstin: Option<String>,
     pub pan: Option<String>,
     pub logo: Option<String>,
     pub anx_id: Option<String>,

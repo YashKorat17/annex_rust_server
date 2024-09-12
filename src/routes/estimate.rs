@@ -147,8 +147,6 @@ pub async fn search_estimate(
         return HttpResponse::Unauthorized().finish();
     }
 
-    
-
     HttpResponse::Ok().json(doc!{
         "status": true
     })
