@@ -275,3 +275,83 @@ pub async fn get_all_customers_estimate(
     }
 }
 
+#[post("/api/v1/customers/payments")]
+pub async fn get_all_customers_payments(
+    data: web::Json<GetInvoices>,
+    client: web::Data<Client>, 
+    req: HttpRequest) -> impl Responder {
+    let token: &str = req.headers().get(header::AUTHORIZATION).and_then(
+            |value| value.to_str().ok())
+            .and_then(
+                |value| value.strip_prefix("Bearer "))
+            .unwrap_or("")
+            .trim();
+    let b: (bool, String) = validate_token(token, &client).await;
+    
+    if b.0 {
+        let u_coll: Collection<User> = client.database(&env::var("DATABASE_NAME").unwrap()).collection("annex_inc_users");
+
+        let count: u64 = u_coll.count_documents(doc! {
+            "_id": &data.anx_id
+        }).await.unwrap();
+
+        if count == 0 {
+            return HttpResponse::BadRequest().json(doc! {
+                "status": false
+            });
+        }        
+
+        let coll: Collection<Customer> = client
+            .database(&env::var("DATABASE_NAME").unwrap())
+            .collection("annex_inc_payment");
+
+        let cursor: Vec<bson::Document> = coll.aggregate([
+            doc! {
+                "$match": {
+                    "u_id": &data.anx_id
+                }
+            },
+            doc! {
+                "$limit": 5
+            },
+            doc! {
+                "$lookup": {
+                    "from": "annex_inc_customers",
+                    "localField": "cst_name",
+                    "foreignField": "_id",
+                    "as": "customers",
+                    "pipeline": [
+                        {
+                            "$match": {
+                                "anx_id": &b.1
+                            }
+                        }
+                    ]
+                }
+            },
+            doc! {
+                "$unwind": "$customers"
+            },
+            doc! {
+                "$project": {
+                   "_id": 1,
+                   "t":1,
+                   "pyt_num":1,
+                   "date":1,
+                   "f":1,
+                   "amt":1,
+                }
+            },
+            doc! {
+                "$sort": {
+                    "cre_at": -1
+                }
+            }
+        ]).await.unwrap().try_collect::<Vec<_>>().await.unwrap();
+        HttpResponse::Ok().json(cursor)
+        
+    } else {
+        HttpResponse::Unauthorized().finish()
+    }
+}
+

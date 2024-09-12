@@ -12,7 +12,7 @@ use actix_web::{ http, web, App, HttpServer};
 use mongodb::{
     options::ClientOptions, Client
 };
-use cust::{check_username, get_all_customers, get_all_customers_estimate, get_customers};
+use cust::{check_username, get_all_customers, get_all_customers_estimate, get_all_customers_payments, get_customers};
 
 
 #[actix_web::main]
@@ -42,6 +42,7 @@ async fn main() -> std::io::Result<()> {
             .service(check_username)
             .service(get_all_customers)
             .service(get_all_customers_estimate)
+            .service(get_all_customers_payments)
             .service(
                 web::scope("/api/v1/estimate")
                 .service(get_estimate_id)
