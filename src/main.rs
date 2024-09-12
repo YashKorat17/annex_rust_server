@@ -38,6 +38,7 @@ async fn main() -> std::io::Result<()> {
                 web::Data::new(client.clone())
             )
             .service(get_customers)
+            .service(cust::test)
             .service(check_username)
             .service(get_all_customers)
             .service(get_all_customers_estimate)
