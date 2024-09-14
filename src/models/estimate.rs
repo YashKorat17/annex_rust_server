@@ -12,6 +12,6 @@ pub struct Search {
     pub cst_name: Option<String>,
     pub y : i32,
     pub n : Option<i32>,
-    pub p: Option<i16>,
-    pub l: Option<i16>,
+    pub p: Option<i32>,
+    pub l: Option<i32>,
 }

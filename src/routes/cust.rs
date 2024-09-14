@@ -5,8 +5,8 @@ pub mod cust_model;
 
 use actix_web::{get, http::header, post, web, HttpRequest, HttpResponse, Responder};
 use auth::{validate_token, User};
-use bson::doc;
-use cust_model::{AnnexIdCheckGstin, AnnexIdCheckUsername, AnnexResponse, Customer, GetInvoices, Users};
+use bson::{doc, Document};
+use cust_model::{AnnexIdCheckGstin, AnnexIdCheckUsername, AnnexResponse, Customer, GetInvoices, Search, Users , StatementId};
 use futures::TryStreamExt;
 use mongodb::{Client, Collection};
 use std::env;
@@ -101,7 +101,7 @@ pub async fn check_username(
                 gstin: user.gstin,
                 msg: "User found".to_string(),
             }),
-            none => HttpResponse::BadRequest().json(doc! {
+            _none => HttpResponse::BadRequest().json(doc! {
                 "status": false
             }),
         }
@@ -194,7 +194,7 @@ pub async fn get_all_customers(
     }
 }
 
-#[post("/api/v1/customers/estimate")]
+#[post("/api/v1/customer/estimate")]
 pub async fn get_all_customers_estimate(
     data: web::Json<GetInvoices>,
     client: web::Data<Client>, 
@@ -275,7 +275,7 @@ pub async fn get_all_customers_estimate(
     }
 }
 
-#[post("/api/v1/customers/payments")]
+#[post("/api/v1/customer/payments")]
 pub async fn get_all_customers_payments(
     data: web::Json<GetInvoices>,
     client: web::Data<Client>, 
@@ -355,3 +355,228 @@ pub async fn get_all_customers_payments(
     }
 }
 
+#[post("/api/v1/customer/search")]
+pub async fn search_customers(
+    data: web::Json<Search>,
+    client: web::Data<Client>, 
+    req: HttpRequest) -> impl Responder {
+    let token: &str = req.headers().get(header::AUTHORIZATION).and_then(
+            |value| value.to_str().ok())
+            .and_then(
+                |value| value.strip_prefix("Bearer "))
+            .unwrap_or("")
+            .trim();
+    let b: (bool, String) = validate_token(token, &client).await;
+    
+    if !b.0 {
+        return HttpResponse::Unauthorized().finish();
+    }
+
+    let mut query: Document  = doc! {
+        "is_act": true,
+        "is_del": false,
+        "u_id": &b.1
+    };
+
+    if let Some(_cst_name) = &data.cst_name {
+        query.insert("name", doc!{
+            "$regex": _cst_name,
+            "$options": "i"
+        });
+    }
+
+    if let Some(_city) = &data.city {
+        query.insert("city", _city);
+    }
+
+    if let Some(_state) = &data.state {
+        query.insert("state", _state);
+    }
+
+
+    let coll: Collection<Customer> = client
+        .database(&env::var("DATABASE_NAME").unwrap())
+        .collection("annex_inc_customers");
+
+    let cursor: Vec<Document> = coll.aggregate([
+        doc! {
+            "$match": query
+        },
+        doc!{"$sort": doc!{"cls_fine": 1}},
+        doc! {
+            "$project": {
+                "_id": 0,
+                "id":"$_id",
+                "name": 1,
+                "b_name": 1,
+                "city": 1,
+                "state": 1,
+                "gstin": 1,
+                "ph": {
+                    "$first": "$ph"
+                }
+            }
+        },
+        doc! {
+            "$facet": {
+                "metadata": [{ "$count": "total" }],
+                "data": [
+                    { "$skip": (data.p.unwrap_or(1) - 1) * data.l.unwrap_or(10) },
+                    { "$limit": data.l.unwrap_or(10) }
+                ]
+            }
+        }
+    ]).await.unwrap().try_collect::<Vec<_>>().await.unwrap();
+
+    HttpResponse::Ok().json(cursor)
+
+}
+
+#[post("/api/v1/customer/statement")]
+pub async fn get_customer_statement(
+    data: web::Json<StatementId>,
+    client: web::Data<Client>, 
+    req: HttpRequest) -> impl Responder {
+    let token: &str = req.headers().get(header::AUTHORIZATION).and_then(
+            |value| value.to_str().ok())
+            .and_then(
+                |value| value.strip_prefix("Bearer "))
+            .unwrap_or("")
+            .trim();
+    let b: (bool, String) = validate_token(token, &client).await;
+    
+    if !b.0 {
+        return HttpResponse::Unauthorized().finish();
+    }
+
+    let coll: Collection<Customer> = client
+        .database(&env::var("DATABASE_NAME").unwrap())
+        .collection("annex_inc_customers");
+
+    let cursor: Vec<Document> = coll.aggregate([
+        doc! {
+            "$match": {
+                "is_act": true,
+                "is_del": false,
+                "u_id": &b.1,
+                "_id": &data.id,
+            }
+        },
+        doc! {
+            "$lookup": {
+                "from": "annex_inc_estimate_invoice",
+                "localField": "_id",
+                "foreignField": "cst_name",
+                "as": "estimate",
+                "pipeline": [
+                    {
+                        "$match": {
+                            "is_del": false,
+                            "u_id": &b.1
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "annex_inc_estimate_invoice",
+                            "localField": "anx_est_id",
+                            "foreignField": "_id",
+                            "as": "anx_est"
+                        }
+                    },
+                    {
+                        "$unwind": {
+                            "path": "$anx_est",
+                            "preserveNullAndEmptyArrays": true
+                        }
+                    }         
+                    ,{
+                        "$project": {
+                            "_id": 1,
+                            "t": 1,
+                            "inv_num": 1,
+                            "pymt_type": 1,
+                            "date": 1,
+                            "f": 1,
+                            "amt": 1,
+                            "anx_est": {
+                                "t": 1,
+                                "pymt_type": 1,
+                                "date": 1,
+                                "f": 1,
+                                "amt": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+
+        doc! {
+            "$lookup": {
+                "from": "annex_inc_payment",
+                "localField": "_id",
+                "foreignField": "cst_name",
+                "as": "payment",
+                "pipeline": [
+                    {
+                        "$match": {
+                            "is_del": false,
+                            "u_id": &b.1
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "annex_inc_payment",
+                            "localField": "anx_pyt_id",
+                            "foreignField": "_id",
+                            "as": "anx_pyt"
+                        }
+                    },
+                    {
+                        "$unwind": {
+                            "path": "$anx_pyt",
+                            "preserveNullAndEmptyArrays": true
+                        }
+                    },
+                    {
+                        "$project": {
+                            "_id": 1,
+                            "t": 1,
+                            "pyt_num": 1,
+                            "date": 1,
+                            "f": 1,
+                            "amt": 1,
+                            "anx_pyt": {
+                                "t": 1,
+                                "date": 1,
+                                "f": 1,
+                                "amt": 1
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        doc! {
+            "$project": {
+                "_id": 0,
+                "id": "$_id",
+                "name": 1,
+                "b_name": 1,
+                "city": 1,
+                "state": 1,
+                "gstin": 1,
+                "ph": 1,
+                "op_bal": 1,
+                "op_fine": 1,
+                "cls_bal": 1,
+                "cls_fine": 1,
+                "estimate": 1,
+                "payment": 1
+            }
+        }
+    ]).await.unwrap().try_collect::<Vec<_>>().await.unwrap();
+
+    HttpResponse::Ok().json(cursor)
+
+}

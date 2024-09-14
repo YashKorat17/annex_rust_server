@@ -54,3 +54,19 @@ pub struct GetInvoices
 {
     pub anx_id: String,
 }
+
+#[derive(Debug, Deserialize , Serialize)]
+pub struct Search
+{
+    pub cst_name: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub p: Option<i32>,
+    pub l: Option<i32>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StatementId
+{
+    pub id: String,
+}

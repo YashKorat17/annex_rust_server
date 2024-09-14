@@ -1,4 +1,3 @@
-use actix_web::dev::ServiceRequest;
 use bson::doc;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use mongodb::{Client, Collection};
