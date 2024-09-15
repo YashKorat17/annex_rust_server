@@ -211,7 +211,7 @@ pub async fn search_payments(
     
     query.push(doc!{"$facet": {
         "data": [{ "$skip": (data.p.unwrap_or(1) - 1) * data.l.unwrap_or(10) }, { "$limit": data.l.unwrap_or(10) }],
-        "count": [{ "$count": "total" }]
+        "metadata": [{ "$count": "total" }]
     }});
 
 
