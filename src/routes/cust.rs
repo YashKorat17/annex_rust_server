@@ -497,14 +497,21 @@ pub async fn get_customer_statement(
                             "pymt_type": 1,
                             "date": 1,
                             "f": 1,
+                            "is_vrfy": 1,
                             "amt": 1,
                             "anx_est": {
                                 "t": 1,
                                 "pymt_type": 1,
                                 "date": 1,
                                 "f": 1,
-                                "amt": 1
+                                "amt": 1,
+                                "is_vrfy": 1,
                             }
+                        }
+                    },
+                    {
+                        "$sort": {
+                            "inv_num": 1
                         }
                     }
                 ]
@@ -546,12 +553,19 @@ pub async fn get_customer_statement(
                             "date": 1,
                             "f": 1,
                             "amt": 1,
+                            "is_vrfy": 1,
                             "anx_pyt": {
                                 "t": 1,
                                 "date": 1,
                                 "f": 1,
-                                "amt": 1
+                                "amt": 1,
+                                "is_vrfy": 1
                             }
+                        }
+                    },
+                    {
+                        "$sort": {
+                            "pyt_num": 1
                         }
                     }
                 ]
