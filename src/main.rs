@@ -8,7 +8,7 @@ use dotenv::dotenv;
 use estimate::{get_estimate, get_estimate_id, search_estimate};
 use payment::{get_payment, get_payment_id, search_payments};
 use product::search_product;
-use std::env;
+use std::{env, fs::File, io::BufReader};
 use actix_cors::Cors;
 use actix_web::{ http, web, App, HttpServer};
 use mongodb::{
@@ -20,6 +20,32 @@ use cust::{check_username, get_all_customers, get_all_customers_estimate, get_al
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();  
+
+    rustls::crypto::aws_lc_rs::default_provider()
+    .install_default()
+    .unwrap();
+
+let mut certs_file = BufReader::new(File::open("/root/annex_rust_server/ssl/cert.pem").unwrap());
+let mut key_file = BufReader::new(File::open("/root/annex_rust_server/ssl/key.pem").unwrap());
+
+// load TLS certs and key
+// to create a self-signed temporary cert for testing:
+// `openssl req -x509 -newkey rsa:4096 -nodes -keyout key.pem -out cert.pem -days 365 -subj '/CN=localhost'`
+let tls_certs = rustls_pemfile::certs(&mut certs_file)
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap();
+let tls_key = rustls_pemfile::pkcs8_private_keys(&mut key_file)
+    .next()
+    .unwrap()
+    .unwrap();
+
+// set up TLS config options
+let tls_config = rustls::ServerConfig::builder()
+    .with_no_client_auth()
+    .with_single_cert(tls_certs, rustls::pki_types::PrivateKeyDer::Pkcs8(tls_key))
+    .unwrap();
+
+
     let client_options: ClientOptions = ClientOptions::parse(
         env::var("MONGODB_URL").unwrap_or("mongodb://localhost:27017".to_string())
     ).await.unwrap();
@@ -63,7 +89,7 @@ async fn main() -> std::io::Result<()> {
             .service(search_payments)
         )
     })
-    .bind(format!("{}:{}",env::var("RUST_HOST").unwrap(), env::var("RUST_PORT").unwrap()))?
+    .bind_rustls_0_23(format!("{}:{}",env::var("RUST_HOST").unwrap(), env::var("RUST_PORT").unwrap()),tls_config)?
     .workers(num_cpus::get())
     .run()
 
