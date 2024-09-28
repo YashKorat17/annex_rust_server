@@ -72,6 +72,5 @@ async fn main() -> std::io::Result<()> {
     .bind(format!("{}:{}",env::var("RUST_HOST").unwrap(), env::var("RUST_PORT").unwrap()))?
     .workers(num_cpus::get())
     .run()
-
     .await
 }
