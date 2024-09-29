@@ -30,7 +30,7 @@ pub async fn validate_token(token: &str, client: &Client) -> (bool, String) {
     match token_data {
         Ok(_) => {
             let user_collection: Collection<User> = client
-                .database(&env::var("DATABASE_NAME").unwrap())
+                .database(&env::var("AUTH_DATABASE_NAME").unwrap())
                 .collection("annex_inc_users");
             let user_doc: Option<User> = user_collection
                 .find_one(doc! {

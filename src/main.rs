@@ -3,12 +3,14 @@
 #[path ="routes/estimate.rs"] pub mod estimate;
 #[path ="routes/invoice.rs"] pub mod inv;
 #[path ="routes/payment.rs"] pub mod payment;
+#[path ="routes/storage.rs"] pub mod storage;
 extern crate dotenv;
 
 use dotenv::dotenv;
 use estimate::{get_estimate, get_estimate_id, search_estimate};
 use payment::{get_payment, get_payment_id, search_payments};
 use product::search_product;
+use storage::get_media;
 use std::env;
 use actix_cors::Cors;
 use actix_web::{ http, web, App, HttpServer};
@@ -56,6 +58,10 @@ async fn main() -> std::io::Result<()> {
                 .service(get_estimate_id)
                 .service(get_estimate)
                 .service(search_estimate)
+        )
+        .service(
+            web::scope("/api/v1/storage")
+            .service(get_media)
         )
         .service(
             web::scope("/api/v1/payment")
