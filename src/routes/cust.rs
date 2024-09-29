@@ -3,6 +3,7 @@ pub mod auth;
 #[path = "../models/cust.rs"]
 pub mod cust_model;
 
+use actix_files::NamedFile;
 use actix_web::{get, http::header, post, web, HttpRequest, HttpResponse, Responder};
 use auth::{validate_token, User};
 use bson::{doc, Document};
@@ -15,10 +16,7 @@ use std::env;
 #[get("/test")]
 pub async fn test() -> impl Responder {
     println!("Test");
-    HttpResponse::Ok().json(doc! {
-        "status": true,
-        "msg": "Test"
-    })
+   NamedFile::open_async("/root/annex_rust_server/Cargo.toml").await
 }
 
 
