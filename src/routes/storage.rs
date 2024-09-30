@@ -48,3 +48,48 @@ pub async fn get_media(
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
+
+#[get("/info/storage")]
+pub async fn get_info(client: web::Data<Client>) -> impl Responder {
+    let data: Collection<Document> = client
+        .database(&env::var("CLOUD_DATABASE_NAME").unwrap())
+        .collection("annex_inc_storage");
+
+    let mut cursor = data.aggregate(
+        vec![
+            doc! {
+                "$group": {
+                    "_id": "$o",
+                    "count": {
+                        "$sum": "$s"
+                    }
+                }
+            },
+        ],
+    ).await.unwrap();
+
+    let mut data = doc! {
+        "public": 0,
+        "private": 0,
+        "total": 0,
+        "available": 0,
+    };
+
+    while let Some(doc) = cursor.try_next().await.unwrap() {
+        if doc.get("_id").unwrap().as_str().unwrap() == "P" {
+            data.insert("public", doc.get("count").unwrap());
+        } else {
+            data.insert("private", doc.get("count").unwrap());
+        }
+    }
+
+    data.insert("total",
+        data.get("public").unwrap().as_i32().unwrap() + data.get("private").unwrap().as_i32().unwrap()
+    );
+
+    data.insert("available", 1073741824 - data.get("total").unwrap().as_i32().unwrap());
+
+
+    HttpResponse::Ok().json(data)
+
+}

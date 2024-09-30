@@ -5,12 +5,61 @@ mod product;
 
 use std::env;
 
-use actix_web::{http::header, post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, http::header, post, web, HttpRequest, HttpResponse, Responder};
 use auth::validate_token;
 use bson::{doc, Document};
 use mongodb::{Client, Collection};
 use product::Search;
 use futures::TryStreamExt;
+
+
+#[get("/category")]
+async fn get_category(client: web::Data<Client>, req: HttpRequest) -> impl Responder {
+    let token: &str = req
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .unwrap_or("")
+        .trim();
+    let b: (bool, String) = validate_token(token, &client).await;
+
+    if !b.0 {
+        return HttpResponse::Unauthorized().finish();
+    }
+
+    let coll: Collection<Document> = client
+        .database(&env::var("DATABASE_NAME").unwrap())
+        .collection("annex_inc_category");
+
+    let cursor: Vec<Document> = coll
+        .aggregate(vec![
+            doc! {
+                "$match": {
+                    "is_del": false,
+                    "u_id": &b.1
+                }
+            },
+            doc! {
+                "$group": {
+                    "_id": "$comm"
+                }
+            },
+            doc! {
+                "$project": {
+                    "_id": 0,
+                    "name": "$_id"
+                }
+            },
+        ])
+        .await
+        .unwrap()
+        .try_collect::<Vec<_>>()
+        .await
+        .unwrap();
+
+    HttpResponse::Ok().json(cursor)
+}
 
 #[post("/search")]
 async fn search_product(
