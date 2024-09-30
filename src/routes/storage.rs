@@ -1,5 +1,5 @@
 use actix_files::NamedFile;
-use actix_web::{get, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, http::header::{ContentDisposition, DispositionParam, DispositionType}, web, HttpRequest, HttpResponse, Responder};
 use bson::{doc, Document};
 use futures::TryStreamExt;
 use mongodb::{Client, Collection};
@@ -36,6 +36,18 @@ pub async fn get_media(
         );
     }
 
+    let headers = ContentDisposition {
+        disposition: DispositionType::Inline,
+        parameters: vec![
+        DispositionParam::Filename(
+            format!(
+                "{}",
+                v.get("name").unwrap().as_str().unwrap()
+            )
+        ),
+        ],
+    };
+
     match NamedFile::open_async(
         format!(
             "{}/{}",
@@ -44,7 +56,9 @@ pub async fn get_media(
         )
     )
     .await {
-        Ok(file) => file.into_response(&req),
+        Ok(file) => {
+            file.set_content_disposition(headers).into_response(&req)
+        },
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
