@@ -1,9 +1,13 @@
+#[path = "../models/auth.rs"]
+pub mod auth;
+
 use actix_files::NamedFile;
-use actix_web::{get, http::header::{ContentDisposition, DispositionParam, DispositionType}, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, http::header::{self, ContentDisposition, DispositionParam, DispositionType}, web, HttpRequest, HttpResponse, Responder};
+use auth::validate_token;
 use bson::{doc, Document};
 use futures::TryStreamExt;
 use mongodb::{Client, Collection};
-use std::env;
+use std::{env, fs};
 
 #[get("/{id}")]
 pub async fn get_media(
@@ -63,14 +67,69 @@ pub async fn get_media(
     }
 }
 
+#[get("/temp/{id}")]
+pub async fn get_temp_media(
+    id: web::Path<String>,
+    req: HttpRequest,
+) -> impl Responder {
+   
+    let headers = ContentDisposition {
+        disposition: DispositionType::Inline,
+        parameters: vec![],
+    };
+
+    match NamedFile::open_async(
+        format!(
+            "{}/{}",
+            "/root/Annex/media/storage/temp",
+            id.to_string()
+        )
+    )
+    .await {
+        Ok(file) => {
+            fs::remove_file(format!(
+                "{}/{}",
+                "/root/Annex/media/storage/temp",
+                id.to_string()
+            )).unwrap();
+            file.set_content_disposition(headers).into_response(&req)
+        },
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+
+
 #[get("/info/storage")]
-pub async fn get_info(client: web::Data<Client>) -> impl Responder {
+pub async fn get_info(
+    client: web::Data<Client>,
+    req: HttpRequest
+) -> impl Responder {
+
+    let token: &str = req.headers().get(header::AUTHORIZATION).and_then(
+        |value| value.to_str().ok())
+        .and_then(
+            |value| value.strip_prefix("Bearer "))
+        .unwrap_or("")
+        .trim();
+        
+    let b: (bool, String) = validate_token(token, &client).await;
+
+    if !b.0 {
+        return HttpResponse::Unauthorized().finish();
+    }
+
     let data: Collection<Document> = client
         .database(&env::var("CLOUD_DATABASE_NAME").unwrap())
         .collection("annex_inc_storage");
 
     let mut cursor = data.aggregate(
         vec![
+            doc! {
+                "$match": {
+                    "u_id": &b.1
+                }
+            },
             doc! {
                 "$group": {
                     "_id": "$o",
