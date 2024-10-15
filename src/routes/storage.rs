@@ -74,7 +74,7 @@ pub async fn get_temp_media(
 ) -> impl Responder {
    
     let headers = ContentDisposition {
-        disposition: DispositionType::Inline,
+        disposition: DispositionType::Attachment,
         parameters: vec![],
     };
 
