@@ -37,6 +37,11 @@ pub struct Users
     pub _id: String,
     pub username: Option<String>,
     pub gstin: Option<String>,
+    pub state: String,
+    pub city: String,
+    pub b_name: String,
+    pub name: String,
+    pub logo : Option<String>
 }
 
 #[derive(Debug, Serialize)]
@@ -46,6 +51,11 @@ pub struct AnnexResponse
     pub username: String,
     pub gstin: Option<String>,
     pub msg: String,
+    pub state: String,
+    pub city: String,
+    pub b_name: String,
+    pub name: String,
+    pub logo : Option<String>
 }
 
 

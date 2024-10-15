@@ -72,7 +72,7 @@ pub async fn check_username(
     let b: (bool, String) = validate_token(token, &client).await;
     if b.0 {
         let coll: Collection<Users> = client
-            .database(&env::var("DATABASE_NAME").unwrap())
+            .database(&env::var("AUTH_DATABASE_NAME").unwrap())
             .collection("annex_inc_users");
 
         if customer.u_name.is_none() {
@@ -87,6 +87,11 @@ pub async fn check_username(
             .projection(doc! {
                 "username" : 1,
                 "gstin" : 1,
+                "state" : 1,
+                "city" : 1,
+                "b_name": 1,
+                "name": 1,
+                "logo": 1,
                 "_id" : 1
             })
             .await
@@ -98,6 +103,11 @@ pub async fn check_username(
                 username: user.username.expect("Username not found"),
                 gstin: user.gstin,
                 msg: "User found".to_string(),
+                state: user.state,
+                city: user.city,
+                b_name: user.b_name,
+                name: user.name,
+                logo: user.logo
             }),
             _none => HttpResponse::BadRequest().json(doc! {
                 "status": false
@@ -123,7 +133,7 @@ pub async fn check_gstin(
     let b: (bool, String) = validate_token(token, &client).await;
     if b.0 {
         let coll: Collection<Users> = client
-            .database(&env::var("DATABASE_NAME").unwrap())
+            .database(&env::var("AUTH_DATABASE_NAME").unwrap())
             .collection("annex_inc_users");
 
         if customer.gstin.is_none() {
@@ -136,6 +146,11 @@ pub async fn check_gstin(
             .projection(doc! {
                 "username" : 1,
                 "gstin" : 1,
+                "state" : 1,
+                "city" : 1,
+                "b_name": 1,
+                "name": 1,
+                "logo": 1,
                 "_id" : 1
             })
             .await
@@ -146,7 +161,12 @@ pub async fn check_gstin(
                 _id: user._id,
                 username: user.username.expect("Username not found"),
                 gstin: user.gstin,
+                state : user.state,
                 msg: "User found".to_string(),
+                city: user.city,
+                b_name: user.b_name,
+                name: user.name,
+                logo: user.logo
             }),
             None => HttpResponse::BadRequest().json(doc! {
                 "status": false
@@ -400,6 +420,7 @@ pub async fn search_customers(
         doc! {
             "$match": query
         },
+        doc! { "$skip" :  (data.p.unwrap_or(1) - 1) * data.l.unwrap_or(10) },
         doc!{"$sort": doc!{"cls_fine": 1}},
         doc! {
             "$project": {
