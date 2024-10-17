@@ -1,0 +1,26 @@
+# create compose file with the following content
+name: annex_rust_service
+
+services:
+  rust_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - RUST_LOG=info
+      - RUST_BACKTRACE=1
+    command: cargo run preview
+    #  set ram limit to 1GB
+    mem_limit: 4g
+    #  set cpu limit to 1
+    cpus: 4
+    network_mode: "host"
+    volumes:
+      - annex_data:/app/storage
+
+
+volumes:
+  annex_data:
+    external: true

@@ -55,7 +55,7 @@ pub async fn get_media(
     match NamedFile::open_async(
         format!(
             "{}/{}",
-            "/root/Annex/media/storage",
+            "storage",
             v.get("name").unwrap().as_str().unwrap()
         )
     )
@@ -81,7 +81,7 @@ pub async fn get_temp_media(
     match NamedFile::open_async(
         format!(
             "{}/{}",
-            "/root/Annex/media/storage/temp",
+            "storage/temp",
             id.to_string()
         )
     )
@@ -89,7 +89,7 @@ pub async fn get_temp_media(
         Ok(file) => {
             fs::remove_file(format!(
                 "{}/{}",
-                "/root/Annex/media/storage/temp",
+                "storage/temp",
                 id.to_string()
             )).unwrap();
             file.set_content_disposition(headers).into_response(&req)
