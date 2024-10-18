@@ -4,8 +4,10 @@
 #[path ="routes/invoice.rs"] pub mod inv;
 #[path ="routes/payment.rs"] pub mod payment;
 #[path ="routes/storage.rs"] pub mod storage;
+#[path ="routes/dash.rs"] pub mod dash;
 extern crate dotenv;
 
+use dash::get_settings;
 use dotenv::dotenv;
 use estimate::{get_estimate, get_estimate_id, search_estimate};
 use payment::{get_payment, get_payment_id, search_payments};
@@ -49,6 +51,10 @@ async fn main() -> std::io::Result<()> {
             .service(get_all_customers_payments)
             .service(search_customers)
             .service(get_customer_statement)
+            .service(
+                web::scope("/api/v1/dash")
+                .service(get_settings)
+            )
             .service(
                 web::scope("/api/v1/product")
                 .service(search_product)
