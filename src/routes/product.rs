@@ -13,7 +13,7 @@ use product::Search;
 use futures::TryStreamExt;
 
 
-#[get("/category")]
+#[get("/catagory")]
 async fn get_category(client: web::Data<Client>, req: HttpRequest) -> impl Responder {
     let token: &str = req
         .headers()
