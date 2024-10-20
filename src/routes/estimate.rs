@@ -195,7 +195,7 @@ pub async fn search_estimate(
         }});
     }
 
-    query.push(doc!{"$sort": doc!{"date": -1}});
+    query.push(doc!{"$sort": doc!{"date": -1 , "inv_num": -1}});
     query.push(doc!{"$project": doc!{
         "_id": 0,
         "id": "$_id",
