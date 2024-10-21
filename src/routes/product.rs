@@ -30,7 +30,7 @@ async fn get_category(client: web::Data<Client>, req: HttpRequest) -> impl Respo
 
     let coll: Collection<Document> = client
         .database(&env::var("DATABASE_NAME").unwrap())
-        .collection("annex_inc_category");
+        .collection("annex_inc_catagory");
 
     let cursor: Vec<Document> = coll
         .aggregate(vec![
@@ -41,20 +41,56 @@ async fn get_category(client: web::Data<Client>, req: HttpRequest) -> impl Respo
                 }
             },
             doc! {
-                "$group": {
-                    "_id": "$comm"
-                }
-            },
-            doc! {
                 "$project": {
                     "_id": 0,
-                    "name": "$_id"
+                    "id": "$_id",
+                    "name": 1,
                 }
             },
         ])
         .await
         .unwrap()
         .try_collect::<Vec<_>>()
+        .await
+        .unwrap();
+
+    HttpResponse::Ok().json(cursor)
+}
+
+#[get("/{id}")]
+async fn get_product(
+    client: web::Data<Client>,
+    req: HttpRequest,
+    id: web::Path<String>,
+) -> impl Responder {
+    let token: &str = req
+        .headers()
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .unwrap_or("")
+        .trim();
+    let b: (bool, String) = validate_token(token, &client).await;
+
+    if !b.0 {
+        return HttpResponse::Unauthorized().finish();
+    }
+
+    let coll: Collection<Document> = client
+        .database(&env::var("DATABASE_NAME").unwrap())
+        .collection("annex_inc_products");
+
+    let cursor: Option<Document> = coll
+        .find_one(
+            doc! {
+                "is_del": false,
+                "is_act": true,
+                "is_del": false,
+                "is_selb": true,
+                "u_id": &b.1,
+                "_id": id.to_string()
+            },
+        )
         .await
         .unwrap();
 
@@ -156,7 +192,5 @@ async fn search_product(
             }
         }
     ]).await.unwrap().try_collect::<Vec<_>>().await.unwrap(); 
-
-
     HttpResponse::Ok().json(cursor)
 }

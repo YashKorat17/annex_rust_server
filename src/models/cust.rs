@@ -15,6 +15,11 @@ pub struct Customer {
     pub pan: Option<String>,
     pub logo: Option<String>,
     pub anx_id: Option<String>,
+    pub gr : Option<String>,
+    pub t : Option<String>,
+    pub max_fine: Option<f32>,
+    pub max_bal: Option<f32>,
+    pub is_act: bool
 }
 
 #[derive(Debug, Deserialize)]

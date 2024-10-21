@@ -27,10 +27,17 @@ pub async fn get_customers(
     req: HttpRequest,
 ) -> impl Responder {
 
-    let token: &str = req.headers().get(header::COOKIE).unwrap().to_str().unwrap();
+    let token: &str = req.headers().get(header::AUTHORIZATION).and_then(
+        |value| value.to_str().ok())
+        .and_then(
+            |value| value.strip_prefix("Bearer "))
+        .unwrap_or("")
+        .trim();
     let b: (bool, String) = validate_token(token, &client).await;
+    if !b.0 {
+        return HttpResponse::Unauthorized().finish();
+    }
 
-    if b.0 {
         let coll: Collection<Customer> = client
             .database(&env::var("DATABASE_NAME").unwrap())
             .collection("annex_inc_customers");
@@ -51,9 +58,6 @@ pub async fn get_customers(
             .unwrap();
         let customers: Customer = cursor.unwrap();
         HttpResponse::Ok().json(customers)
-    } else {
-        HttpResponse::Unauthorized().finish()
-    }
 }
 
 #[post("/api/v1/customer/check/annex/username")]

@@ -11,7 +11,7 @@ use dash::get_settings;
 use dotenv::dotenv;
 use estimate::{get_estimate, get_estimate_id, search_estimate};
 use payment::{get_payment, get_payment_id, search_payments};
-use product::{get_category, search_product};
+use product::{get_category, get_product, search_product};
 use storage::{get_info, get_media, get_temp_media};
 use std::env;
 use actix_cors::Cors;
@@ -59,6 +59,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api/v1/product")
                 .service(search_product)
                 .service(get_category)
+                .service(get_product)
             )
             .service(
                 web::scope("/api/v1/estimate")
