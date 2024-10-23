@@ -5,6 +5,7 @@
 #[path ="routes/payment.rs"] pub mod payment;
 #[path ="routes/storage.rs"] pub mod storage;
 #[path ="routes/dash.rs"] pub mod dash;
+#[path ="routes/settings.rs"] pub mod settings;
 extern crate dotenv;
 
 use dash::get_settings;
@@ -12,6 +13,7 @@ use dotenv::dotenv;
 use estimate::{get_estimate, get_estimate_id, search_estimate};
 use payment::{get_payment, get_payment_id, search_payments};
 use product::{get_category, get_product, search_product};
+use settings::get_settings as settings_get_settings;
 use storage::{get_info, get_media, get_temp_media};
 use std::env;
 use actix_cors::Cors;
@@ -83,6 +85,10 @@ async fn main() -> std::io::Result<()> {
             web::scope("/api/v1/invoice")
             .service(inv::get_inv_id)
             .service(inv::get_inv)
+        )
+        .service(
+            web::scope("/api/v1/settings")
+            .service(settings_get_settings)
         )
     })
     .bind(format!("{}:{}",env::var("RUST_HOST").unwrap(), env::var("RUST_PORT").unwrap()))?
